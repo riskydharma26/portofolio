@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESATube</title>
+    <!-- Muat Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Font kustom untuk tampilan yang lebih baik */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Tambahkan gambar latar belakang di sini */
+            background-image: url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2w paramount is an excellent choice for businesses looking to enhance their brand image and attract new customers. With a range of design options and the ability to customize to your exact specifications, paramount provides a professional and polished finish that will leave a lasting impression. whether you're looking to create a unique logo, develop a complete branding package, or simply add a touch of sophistication to your existing marketing materials, paramount has the expertise and resources to help you achieve your goals. contact us today to learn more about our services and how we can help you take your brand to the next level. */
+            background-size: cover; /* Pastikan gambar menutupi seluruh area */
+            background-position: center; /* Posisikan gambar di tengah */
+            background-attachment: fixed; /* Gambar tetap saat scroll */
+            background-repeat: no-repeat; /* Hindari pengulangan gambar */
+            min-height: 100vh;
+            color: #1a202c; /* Warna teks default */
+        }
+        /* Style untuk modal */
+        #video-player-modal.hidden {
+            display: none;
+        }
+        /* Animasi spinner sederhana */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, .1);
+            border-left-color: #2563eb; /* Biru */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        /* Untuk membuat konten lebih mudah dibaca di atas latar belakang */
+        .content-card {
+            background-color: rgba(255, 255, 255, 0.9); /* Latar belakang putih semi-transparan */
+            backdrop-filter: blur(5px); /* Efek blur untuk kejelasan */
+        }
+        /* Menyesuaikan warna teks untuk visibilitas yang lebih baik */
+        .text-blue-700 { color: #1e40af; } /* Lebih gelap untuk kontras */
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-800 { color: #1f2937; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-900">
+
+    <!-- Kontainer Utama --><div class="container mx-auto max-w-6xl p-4 sm:p-8">
+        
+        <header class="text-center mb-8 content-card p-6 rounded-lg shadow-lg">
+            <h1 class="text-4xl font-bold text-blue-700">ESATube</h1>
+            <p class="text-lg text-gray-600 mt-2">Tabe Salamat Lingu Nalatai Salam Sahujud Karendem Malempang</p>
+        </header>
+
+        <!-- ============================================= --><!-- PANEL ADMIN (HANYA UNTUK PENGEMBANG) --><!-- Panel ini disembunyikan secara default --><!-- ============================================= --><div id="admin-panel" class="hidden content-card p-6 rounded-lg shadow-lg mb-10">
+            <h2 class="text-2xl font-semibold text-gray-800 border-b pb-3 mb-4">Panel Admin</h2>
+            <div class="space-y-4">
+                <div>
+                    <label for="video-title" class="block text-sm font-medium text-gray-700 mb-1">Judul Video</label>
+                    <input type="text" id="video-title" placeholder="Masukkan judul video..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="video-embed-url" class="block text-sm font-medium text-gray-700 mb-1">URL Embed Video (iFrame src)</label>
+                    <input type="text" id="video-embed-url" placeholder="Contoh: https://www.youtube.com/embed/videoId atau URL embed Vimeo/video langsung" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="video-thumbnail-url" class="block text-sm font-medium text-gray-700 mb-1">URL Gambar Thumbnail (Opsional)</label>
+                    <input type="text" id="video-thumbnail-url" placeholder="URL gambar untuk tampilan pratinjau" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button id="add-video-button" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-md hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                    Tambah Video
+                </button>
+                <!-- Tombol Download Baru --><button id="download-app-button" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-semibold shadow-md hover:bg-green-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 mt-2">
+                    Unduh Aplikasi (.html)
+                </button>
+                <!-- Pesan error/sukses --><div id="admin-message" class="text-sm text-center"></div>
+            </div>
+            <!-- Info ID Pengguna --><div class="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-md text-center">
+                <p class="text-sm text-blue-700">ID Pengguna Anda (untuk debug):</p>
+                <code id="user-id-display" class="text-xs text-blue-900 font-mono break-all">Memuat...</code>
+            </div>
+        </div>
+
+        <!-- ============================================= --><!-- GALERI VIDEO (UNTUK SEMUA PENGUNJUNG) --><!-- ============================================= --><main class="content-card p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold mb-6 text-gray-800">Koleksi Video</h2>
+            
+            <!-- Indikator Loading --><div id="loading-indicator" class="flex flex-col items-center justify-center h-64">
+                <div class="spinner"></div>
+                <p class="text-gray-600 mt-4">Memuat video...</p>
+            </div>
+
+            <!-- Kontainer Grid Video --><div id="video-gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Kartu video akan dimasukkan di sini oleh JavaScript --></div>
+        </main>
+    </div>
+
+    <!-- ============================================= --><!-- MODAL PLAYER VIDEO --><!-- ============================================= --><div id="video-player-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl overflow-hidden">
+            <!-- Header Modal --><div class="flex justify-between items-center p-4 border-b">
+                <h3 id="video-player-title" class="text-xl font-semibold">Menonton Video</h3>
+                <button id="close-modal-button" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+            </div>
+            <!-- Konten Modal (iFrame) --><div class="p-4">
+                <div class="aspect-w-16 aspect-h-9">
+                    <!-- iframe src akan diisi oleh embedUrl --><iframe id="youtube-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================= --><!-- SCRIPT FIREBASE DAN APLIKASI --><!-- ============================================= --><script type="module">
+        // Impor fungsi-fungsi Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            query, 
+            onSnapshot,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- KONFIGURASI PENTING ---
+        // TODO: Ganti ini dengan User ID (uid) Anda dari Firebase Authentication.
+        // 1. Jalankan aplikasi ini sekali.
+        // 2. Cek "ID Pengguna Anda" yang muncul di Panel Admin.
+        // 3. Salin ID tersebut dan tempel di sini menggantikan "GANTI_DENGAN_UID_ADMIN_ANDA".
+        const ADMIN_USER_ID = "GANTI_DENGAN_UID_ADMIN_ANDA"; 
+        // -------------------------
+
+        // Variabel global yang disediakan oleh lingkungan Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, currentUserId;
+        let unsubscribeFromVideos = null; // Untuk menyimpan listener onSnapshot
+
+        // Ambil elemen-elemen DOM
+        const adminPanel = document.getElementById('admin-panel');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const videoGallery = document.getElementById('video-gallery');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const addVideoButton = document.getElementById('add-video-button');
+        const downloadAppButton = document.getElementById('download-app-button'); // <-- BARU: Tombol Download
+        const videoTitleInput = document.getElementById('video-title');
+        const videoEmbedUrlInput = document.getElementById('video-embed-url');
+        const videoThumbnailUrlInput = document.getElementById('video-thumbnail-url');
+        const adminMessage = document.getElementById('admin-message');
+        
+        const modal = document.getElementById('video-player-modal');
+        const closeModalButton = document.getElementById('close-modal-button');
+        const playerTitle = document.getElementById('video-player-title');
+        const playerIframe = document.getElementById('youtube-iframe');
+
+        // Fungsi untuk menginisialisasi aplikasi
+        async function initializeAppWrapper() {
+            try {
+                // Inisialisasi Firebase
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Aktifkan log debug Firebase
+                setLogLevel('Debug');
+
+                // Setup listener autentikasi
+                setupAuthListener();
+                
+                // Tambahkan event listener untuk tombol
+                addVideoButton.addEventListener('click', handleAddVideo);
+                closeModalButton.addEventListener('click', hideVideoPlayer);
+                downloadAppButton.addEventListener('click', handleDownloadApp); // <-- BARU: Listener untuk tombol Download
+                
+            } catch (error) {
+                console.error("Kesalahan inisialisasi Firebase:", error);
+                videoGallery.innerHTML = `<p class="text-red-500 text-center">Gagal memuat aplikasi. Cek konsol untuk detail.</p>`;
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // Fungsi untuk menangani pengunduhan file HTML (BARU)
+        function handleDownloadApp() {
+            try {
+                // Ambil seluruh konten HTML dari halaman
+                const htmlContent = document.documentElement.outerHTML;
+                
+                // Buat Blob dari konten HTML
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                
+                // Buat URL objek untuk Blob
+                const url = URL.createObjectURL(blob);
+                
+                // Buat elemen <a> temporer
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ESATube_Galeri_Video.html'; // Nama file yang akan diunduh
+                
+                // Simulasikan klik pada elemen <a>
+                document.body.appendChild(a);
+                a.click();
+                
+                // Hapus elemen dan URL objek setelah selesai
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                showAdminMessage("File HTML berhasil diunduh!", "success");
+
+            } catch (error) {
+                console.error("Gagal mengunduh file HTML:", error);
+                showAdminMessage("Gagal mengunduh file. Cek konsol.", "error");
+            }
+        }
+        
+        // Fungsi untuk setup listener autentikasi
+        function setupAuthListener() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // Pengguna sudah login
+                    currentUserId = user.uid;
+                    console.log("Pengguna terautentikasi:", currentUserId);
+                    
+                    // Tampilkan ID pengguna untuk admin
+                    userIdDisplay.textContent = currentUserId;
+
+                    // Periksa apakah pengguna adalah admin
+                    if (currentUserId === ADMIN_USER_ID) {
+                        adminPanel.classList.remove('hidden');
+                        console.log("Panel Admin ditampilkan.");
+                    } else {
+                        adminPanel.classList.add('hidden');
+                        console.log("Pengguna bukan admin, panel disembunyikan.");
+                    }
+
+                    // Mulai mendengarkan data video dari Firestore
+                    if (!unsubscribeFromVideos) {
+                        setupVideoListener();
+                    }
+
+                } else {
+                    // Pengguna belum login, coba login
+                    console.log("Tidak ada pengguna, mencoba login...");
+                    try {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Gagal login:", error);
+                        loadingIndicator.innerHTML = `<p class="text-red-500 text-center">Gagal terhubung. Silakan segarkan halaman.</p>`;
+                    }
+                }
+            });
+        }
+
+        // Fungsi untuk mendengarkan perubahan data video di Firestore
+        function setupVideoListener() {
+            const collectionPath = `/artifacts/${appId}/public/data/videos`;
+            const q = query(collection(db, collectionPath));
+
+            unsubscribeFromVideos = onSnapshot(q, (snapshot) => {
+                loadingIndicator.classList.add('hidden');
+                videoGallery.innerHTML = ''; // Kosongkan galeri sebelum diisi ulang
+
+                if (snapshot.empty) {
+                    videoGallery.innerHTML = `<p class="text-gray-600 text-center col-span-full">Belum ada video yang ditambahkan.</p>`;
+                    return;
+                }
+
+                snapshot.docs.forEach(doc => {
+                    // Data sekarang diharapkan memiliki 'embedUrl' dan 'thumbnailUrl'
+                    renderVideoCard(doc.data());
+                });
+
+            }, (error) => {
+                console.error("Error mendapatkan video:", error);
+                videoGallery.innerHTML = `<p class="text-red-500 text-center col-span-full">Gagal memuat video.</p>`;
+                loadingIndicator.classList.add('hidden');
+            });
+        }
+
+        // Fungsi untuk merender satu kartu video
+        function renderVideoCard(videoData) {
+            // Data properti yang digunakan telah diubah
+            const { title, embedUrl, thumbnailUrl } = videoData; 
+            if (!title || !embedUrl) return; // Lewati jika data tidak lengkap
+
+            // Gunakan gambar placeholder jika tidak ada thumbnail yang disediakan
+            const finalThumbnailUrl = thumbnailUrl || 'https://placehold.co/600x400/CCCCCC/333333?text=Video+Source'; 
+
+            const card = document.createElement('div');
+            card.className = "bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105 hover:shadow-lg";
+            
+            card.innerHTML = `
+                <img src="${finalThumbnailUrl}" alt="${title}" class="w-full h-48 object-cover">
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 truncate" title="${title}">${title}</h3>
+                </div>
+            `;
+            
+            // Tambahkan event listener untuk memutar video saat diklik
+            card.addEventListener('click', () => {
+                // Meneruskan embedUrl, bukan videoId
+                showVideoPlayer(embedUrl, title); 
+            });
+
+            videoGallery.appendChild(card);
+        }
+
+        // Fungsi untuk menangani penambahan video oleh admin
+        async function handleAddVideo() {
+            const title = videoTitleInput.value.trim();
+            const embedUrl = videoEmbedUrlInput.value.trim(); // <-- Mengambil URL Embed
+            const thumbnailUrl = videoThumbnailUrlInput.value.trim(); // <-- Mengambil URL Thumbnail
+
+            if (!title || !embedUrl) {
+                showAdminMessage("Judul dan URL Embed tidak boleh kosong.", "error");
+                return;
+            }
+
+            // Nonaktifkan tombol saat proses
+            addVideoButton.disabled = true;
+            addVideoButton.textContent = "Menambahkan...";
+            showAdminMessage("Sedang menambahkan video...", "loading");
+
+            try {
+                const collectionPath = `/artifacts/${appId}/public/data/videos`;
+                const videoData = {
+                    title: title,
+                    embedUrl: embedUrl, // Simpan URL Embed
+                    thumbnailUrl: thumbnailUrl, // Simpan URL Thumbnail
+                    addedBy: currentUserId,
+                    createdAt: new Date().toISOString()
+                };
+
+                await addDoc(collection(db, collectionPath), videoData);
+
+                showAdminMessage("Video berhasil ditambahkan!", "success");
+                videoTitleInput.value = '';
+                videoEmbedUrlInput.value = '';
+                videoThumbnailUrlInput.value = '';
+
+            } catch (error) {
+                console.error("Gagal menambahkan video:", error);
+                showAdminMessage("Gagal menambahkan video. Cek konsol.", "error");
+            } finally {
+                // Aktifkan kembali tombol
+                addVideoButton.disabled = false;
+                addVideoButton.textContent = "Tambah Video";
+            }
+        }
+
+        // Fungsi untuk menampilkan pesan di panel admin
+        function showAdminMessage(message, type = "success") {
+            adminMessage.textContent = message;
+            adminMessage.classList.remove('text-green-600', 'text-red-600', 'text-gray-600');
+            
+            if (type === "success") {
+                adminMessage.classList.add('text-green-600');
+            } else if (type === "error") {
+                adminMessage.classList.add('text-red-600');
+            } else {
+                adminMessage.classList.add('text-gray-600');
+            }
+
+            // Hapus pesan setelah 3 detik (kecuali pesan loading)
+            if (type !== "loading") {
+                setTimeout(() => {
+                    adminMessage.textContent = '';
+                }, 3000);
+            }
+        }
+        
+        // Fungsi untuk menampilkan modal player
+        function showVideoPlayer(embedUrl, title) { // <-- Menerima embedUrl
+            playerTitle.textContent = title;
+            // Langsung atur src iframe ke embedUrl yang disediakan pengguna
+            playerIframe.src = embedUrl; 
+            modal.classList.remove('hidden');
+        }
+
+        // Fungsi untuk menyembunyikan modal player
+        function hideVideoPlayer() {
+            modal.classList.add('hidden');
+            playerIframe.src = ''; // Hentikan pemutaran video
+        }
+
+        // Mulai aplikasi saat DOM siap
+        document.addEventListener('DOMContentLoaded', initializeAppWrapper);
+
+    </script>
+</body>
+</html>
